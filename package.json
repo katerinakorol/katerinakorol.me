@@ -1,0 +1,9 @@
+{
+	"name": "kate-site",
+	"dependencies": {
+		"gulp": "*",
+		"gulp-minify-css": "*",
+		"gulp-uglify": "*",
+		"gulp-htmlmin": "*"
+	}
+}

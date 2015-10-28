@@ -1,0 +1,235 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from __future__ import print_function
+
+import os
+import argparse
+import sys
+import shutil
+import re
+from datetime import datetime
+from os import path
+from subprocess import call
+
+def error(str):
+    return u'\033[91m' + str + u'\033[0m'
+
+
+def warning(str):
+    return u'\033[93m' + str + u'\033[0m'
+
+
+def success(str):
+    return u'\033[92m' + str + u'\033[0m'
+
+
+def log_error(str):
+    print(error(u'Error: %s' % str))
+
+
+def log_warning(str):
+    print(warning(u'warning: %s' % str))    
+
+try:
+    import toml
+except ImportError:
+    log_error('toml package is not installed\nRun `pip install toml`')
+    sys.exit(1)
+
+try:
+    from PIL import Image
+except ImportError:
+    log_error('Pillow package is not installed\nRun `pip install pillow`')
+    sys.exit(1)
+
+
+FRONT_MATTER_RE = re.compile(r'\+\+\+([^+]*)\+\+\+(.*)$', re.M | re.DOTALL)
+
+
+class KateError(Exception):
+    def __init__(self, msg):
+            self.msg = msg
+
+class FileParsingError(Exception):
+    def __init__(self, filename):
+        self.filename = filename
+
+    def __unicode__(self):
+        return 'Could not parse file `%s`' % path.basename(self.filename)
+
+
+def putchar(str):
+    sys.stdout.write(str)
+    sys.stdout.flush()
+
+
+def adjusted_size(size, width):
+    real_width, real_height = size
+    return (float(width), float(real_height) * (float(width) / float(real_width)))
+
+
+def slice_photo(photo_path):
+    photo_name, photo_ext = path.splitext(path.basename(photo_path))
+    photo_slices_dir_path = path.join(path.dirname(photo_path), photo_name)
+
+    if path.isdir(photo_slices_dir_path):
+        shutil.rmtree(photo_slices_dir_path)
+
+    os.makedirs(photo_slices_dir_path)
+
+    for name, width in [('large', 1160,), ('medium', 768), ('small', 480)]:
+        for multiplier in (1, 2):
+            result_dest = path.join(photo_slices_dir_path, u'%s@%dx%s' % (name, multiplier, photo_ext))
+
+            try:
+                img = Image.open(photo_path)
+                img.thumbnail(adjusted_size(img.size, width * multiplier))
+                img.save(result_dest, quality=50, optimize=True, progressive=True)
+            except IOError:
+                pass
+
+
+def slice_photos(photos_dir_path):
+    if not path.isdir(photos_dir_path):
+        print(error('Error: `%s` is not a directory' % photos_dir_path))
+        sys.exit(1)
+
+    photos_paths = get_imagepaths_in_dir(photos_dir_path)
+    if len(photos_paths) == 0:
+        print(error('Error: There is no images in `%s` directory.' %photos_dir_path))
+        sys.exit(1)
+
+    for photo_path in photos_paths:
+        slice_photo(photo_path)
+        putchar(success('.'))
+        
+    putchar('\n')
+
+
+def update_post_file(photos_dir_path, photos_paths):
+    post_filename = photos_dir_path + '.md'
+    post_data = {'front_matter': None, 
+                 'content': '\n'}
+
+    try:
+        with open(post_filename, 'r') as f:
+            matches = FRONT_MATTER_RE.search(f.read())
+            if matches:
+                (fm, post_data['content']) = matches.groups()
+                post_data['front_matter'] = toml.loads(fm)
+            else:
+                raise FileParsingError(f.name)
+
+    except IOError:
+        pass
+
+    except FileParsingError as e:
+        log_warning(e)
+
+    get_photo_name = lambda image_path: path.splitext(path.basename(image_path))[0]
+    photos_names = map(get_photo_name, photos_paths)
+
+    if post_data['front_matter'] is None:
+        fm = dict(
+            date=datetime.utcnow().replace(microsecond=0).isoformat('T') + 'Z', 
+            title=path.basename(photos_dir_path).capitalize())
+
+        if len(photos_names) > 0:
+            fm.update(dict(
+                cover=photos_names[0],
+                photo=[dict(name=photo_name) for photo_name in photos_names]))
+
+        post_data['front_matter'] = fm
+            
+    else:
+        if len(photos_names) > 0:
+            if post_data['front_matter'].get('cover', None) not in photos_names:
+                post_data['front_matter']['cover'] = photos_names[0]    
+            
+            def get_photo_data(name, photo_collection):
+                for photo_data in photo_collection:
+                    if photo_data.get('name', None) == name:
+                        return photo_data
+                return {}
+
+            collection = post_data['front_matter'].get('photo', [])
+
+            res_collection = []
+            for photo_name in photos_names:
+                photo_data = dict(name=photo_name)
+                photo_data.update(get_photo_data(photo_name, collection))
+                res_collection.append(photo_data)
+
+            post_data['front_matter']['photo'] = res_collection
+
+        else:
+            post_data['front_matter'].update(dict(photo=None, cover=None))
+
+    with open(post_filename, 'w') as f:
+        f.write(u'+++\n%s+++' % toml.dumps(post_data['front_matter']).replace('[[', '\n[['))
+        f.write(post_data['content'])
+
+
+def get_imagepaths_in_dir(dir_path):
+    paths = []
+    for (dirpath, dirnames, filenames) in os.walk(dir_path):
+        paths = [path.normpath(path.join(dirpath, name)) for name in filenames if path.splitext(name.lower())[1] == '.jpg']
+        break
+
+    return paths
+
+
+def post(args):
+    photos_dir_path = path.abspath(args.photos_dir)
+
+    if args.slice:
+        slice_photos(photos_dir_path)
+
+    photos_paths = get_imagepaths_in_dir(photos_dir_path)
+    update_post_file(photos_dir_path, photos_paths)
+
+
+def deploy(args):
+    print(success('--- Building site'))
+    call(['hugo'])
+
+    print(success('--- Minify files'))
+    call(['gulp'])
+
+    print(success('--- Sync with server'))
+    call(['rsync', '-avc', '--delete-during', 'public/', '%s@%s:%s' % (args.user, args.host, args.dir)])
+
+
+def server(args):
+    call(['hugo', 'server', '-w'])
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Converts directory of images \
+        into directory of proper resized images")
+    subparsers = parser.add_subparsers()
+
+    # post
+    post_parser = subparsers.add_parser('post')
+    post_parser.add_argument('photos_dir', help='Path to photos folder')
+    post_parser.add_argument('-n', '--no-slice', help='Not slice photos, just update post', dest='slice', action='store_false')
+    post_parser.set_defaults(slice=True, func=post)
+
+    # deploy
+    deploy_parser = subparsers.add_parser('deploy')
+    deploy_parser.add_argument('--host', help='Host to deploy', dest='host')
+    deploy_parser.add_argument('--dir', help='Directory on host to deploy', dest='dir')
+    deploy_parser.add_argument('--user', help='User on host to deploy', dest='user')
+    deploy_parser.set_defaults(host='beta.katerinakorol.me', dir='/var/www/kate-site/', user='root', func=deploy)
+
+    # server
+    server_parser = subparsers.add_parser('server')
+    server_parser.set_defaults(func=server)
+
+    args = parser.parse_args()
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

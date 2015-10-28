@@ -1,0 +1,18 @@
+<div class="posts-preview--post">
+	<a href="{{ .Permalink }}" class="photo">
+		<picture>
+			{{ $basePath := add "/" (add .Section (add "/" (add .Source.BaseFileName (add "/" (add .Params.cover "/"))))) }}
+			<!--[if IE 9]><video style="display: none;"><![endif]-->
+			<source srcset="/{{ $basePath }}medium@1x.jpg, {{ $basePath }}medium@2x.jpg 2x" media="(min-width: 421px)">
+			<!--[if IE 9]></video><![endif]-->
+			<img class="photo--image" srcset="{{ $basePath }}small@1x.jpg, {{ $basePath }}small@2x.jpg" alt="…">
+		
+		</picture>
+
+		<div class="photo--caption">
+			<div class="photo--caption-content">
+				<h2>{{ .Title | safeHTML }}{{ with .Params.photo }} ({{ len . }} фото){{ end }}</h2>
+			</div>
+		</div>
+	</a>
+</div>
