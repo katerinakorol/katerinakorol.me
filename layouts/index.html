@@ -2,7 +2,7 @@
 
 <div class="section">
 	<div class="container">
-		<div class="posts-preview">{{ range .Data.Pages}}{{.Render "preview"}}{{ end }}</div>
+		<div class="posts-preview">{{ range where .Data.Pages "Section" "!=" ""}}{{.Render "preview"}}{{ end }}</div>
 	</div>
 </div>
 

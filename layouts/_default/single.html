@@ -17,11 +17,9 @@
 		<div class="container container-wide photos--photo">
 			<a href="{{ $basePath }}.jpg" class="photo">
 				<picture>
-					<!--[if IE 9]><video style="display: none;"><![endif]-->
 					<source srcset="{{ $basePath }}/large@1x.jpg, {{ $basePath }}/large@2x.jpg 2x" media="(min-width: 768px)">
 					<source srcset="{{ $basePath }}/medium@1x.jpg, {{ $basePath }}/medium@2x.jpg 2x" media="(min-width: 421px)">
-					<!--[if IE 9]></video><![endif]-->
-					<img class="photo--image" srcset="{{ $basePath }}/small@1x.jpg, {{ $basePath }}/small@2x.jpg 2x" alt="…">
+					<img class="photo--image" srcset="{{ $basePath }}/small@1x.jpg, {{ $basePath }}/small@2x.jpg 2x" alt="{{.Title}}">
 				</picture>
 				<div class="photo--caption">
 					<div class="photo--caption-content">{{add $index 1}}{{with .text }}. {{.}}{{end}}</div>

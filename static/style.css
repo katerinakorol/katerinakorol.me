@@ -191,8 +191,13 @@ h2 {
 .photo
 {
     color: #fff;
-    display: block;
+    display: none;
     position: relative;
+}
+
+.photo-loaded
+{
+    display: block;
 }
 
 .photo--caption
