@@ -19,20 +19,26 @@ h2 {
 }
 
 .section {
-	padding: 20px 0;
+	padding: 10px 0;
 }
 
 .container
 {
 	padding: 0 20px;
 	margin: 0 auto;
-    max-width: 1200px;
+    max-width: 1000px;
 }
 
-.container-wide
+@media (max-width: 600px) {
+    .container
+    {
+        padding: 0 10px;
+    }
+}
+
+.header
 {
-    max-width: 1160px;
-	padding: 0;
+    padding: 10px 0;
 }
 
 /*Header*/
@@ -80,6 +86,13 @@ h2 {
 {
 	color: #2D2D2D;
 	text-decoration: none;
+    -webkit-transition: opacity .1s ease-out;
+            transition: opacity .1s ease-out;
+}
+
+.header a:hover
+{
+    opacity: 0.7;
 }
 
 @media (max-width: 600px) {
@@ -96,20 +109,27 @@ h2 {
 
 .posts-preview
 {
-    margin: 0 -7px;
+    margin: 0 -8px;
+    line-height: 0;
 }
 
 .posts-preview--post {
+    line-height: 1.4;
 	width: 50%;
 	display: inline-block;
-	padding: 0 7px 14px;
+	padding: 0 8px 16px;
 }
 
 @media (max-width: 600px) {
+    .posts-preview
+    {
+        margin: 0;
+    }
+
     .posts-preview--post
     {
         display: block;
-        padding: 0 0 5px;
+        padding: 0 0 8px;
         width: 100%;
     }
 }

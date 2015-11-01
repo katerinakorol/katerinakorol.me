@@ -1,9 +1,9 @@
-{{ partial "head.html" }}
+{{ partial "head.html" . }}
 
 <div class="section">
-	<div class="container container-wide">
+	<div class="container">
 		<div class="posts-preview">{{ range .Data.Pages}}{{.Render "preview"}}{{ end }}</div>
 	</div>
 </div>
 
-{{ partial "footer.html" }}
+{{ partial "footer.html" . }}

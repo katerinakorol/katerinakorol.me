@@ -202,7 +202,10 @@ def deploy(args):
 
 
 def server(args):
-    call(['hugo', 'server'])
+    try:
+        call(['hugo', 'server', '-w', '--disableLiveReload'])
+    except KeyboardInterrupt:
+        pass
 
 
 def main():
