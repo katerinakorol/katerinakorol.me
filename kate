@@ -202,7 +202,7 @@ def deploy(args):
 
 
 def server(args):
-    call(['hugo', 'server'])
+    call(['hugo', 'server', '-w', '--disableLiveReload'])
 
 
 def main():
