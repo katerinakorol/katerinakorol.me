@@ -221,7 +221,7 @@ def deploy(args):
     call(['gulp'])
 
     print(success('--- Sync with server'))
-    call(['rsync', '-avc', '--delete-during', 'public/', '%s@%s:%s' % (args.user, args.host, args.dir)])
+    call(['rsync', '-avc', '--delete-during', 'public/', '%s@%s:%s' % (args.user, args.host, path.join('/var/www', args.dir))])
 
 
 def server(args):
@@ -254,7 +254,7 @@ def main():
     deploy_parser.add_argument('--host', help='Host to deploy', dest='host')
     deploy_parser.add_argument('--dir', help='Directory on host to deploy', dest='dir')
     deploy_parser.add_argument('--user', help='User on host to deploy', dest='user')
-    deploy_parser.set_defaults(host='beta.katerinakorol.me', dir='/var/www/kate-site/', user='root', func=deploy)
+    deploy_parser.set_defaults(host='beta.katerinakorol.me', dir='beta.katerinakorol.me', user='web', func=deploy)
 
     # server
     server_parser = subparsers.add_parser('server')
