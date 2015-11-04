@@ -106,6 +106,7 @@ h2 {
 }
 
 .footer {
+    padding-top: 0px;
     padding-bottom: 20px;
 }
 
@@ -183,7 +184,14 @@ h2 {
 
 .photos--photo
 {
-    margin-bottom: 2em;
+    margin-bottom: 16px;
+}
+
+@media (max-width: 600px) {
+    .photos--photo
+    {
+        margin-bottom: 8px;
+    }
 }
 
 .photos--photo:last-child {
