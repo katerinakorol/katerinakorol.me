@@ -78,7 +78,7 @@ def slice_photo(photo_path, quality):
 
     os.makedirs(photo_slices_dir_path)
 
-    for name, width in [('large', 1160,), ('medium', 768), ('small', 480)]:
+    for name, width in [('large', 1060,), ('medium', 728), ('small', 440)]:
         for multiplier in (1, 2):
             result_dest = path.join(photo_slices_dir_path, u'%s@%dx%s' % (name, multiplier, photo_ext))
 
@@ -99,6 +99,8 @@ def slice_photos(photos_dir_path, quality):
     if len(photos_paths) == 0:
         print(error('Error: There is no images in `%s` directory.' %photos_dir_path))
         sys.exit(1)
+
+    print(success('Slicing %s' % photos_dir_path.replace(os.getcwd() + '/', '')))
 
     for photo_path in photos_paths:
         slice_photo(photo_path, quality)
@@ -180,6 +182,21 @@ def get_imagepaths_in_dir(dir_path):
     return paths
 
 
+def get_dir_contents(dirpath):
+    (_, dirnames, filenames) = os.walk(dirpath).next()
+    return (dirnames, filenames)
+
+def find_images_dirs(dirpath):
+    dirnames, fnames = get_dir_contents(dirpath)
+    if len(filter(lambda fname: path.splitext(fname.lower())[1] == '.jpg', fnames)) > 0:
+        return [dirpath]
+    else:
+        dirpaths = []
+        for dirname in dirnames:
+            dirpaths += find_images_dirs(path.join(dirpath, dirname))
+        return dirpaths
+
+
 def post(args):
     photos_dir_path = path.abspath(args.photos_dir)
 
@@ -189,6 +206,12 @@ def post(args):
     photos_paths = get_imagepaths_in_dir(photos_dir_path)
     update_post_file(photos_dir_path, photos_paths)
 
+
+def slice(args):
+    dirs = find_images_dirs(path.abspath(args.photos_dir))
+
+    for d in dirs:
+        slice_photos(d, args.quality)
 
 def deploy(args):
     print(success('--- Building site'))
@@ -219,6 +242,12 @@ def main():
     post_parser.add_argument('-n', '--no-slice', help='Not slice photos, just update post', dest='slice', action='store_false')
     post_parser.add_argument('-q', '--quality', type=int, help='Quality', dest='quality')
     post_parser.set_defaults(slice=True, quality=50, func=post)
+
+    # slice
+    post_parser = subparsers.add_parser('slice')
+    post_parser.add_argument('photos_dir', help='Path to photos folder')
+    post_parser.add_argument('-q', '--quality', type=int, help='Quality', dest='quality')
+    post_parser.set_defaults(quality=50, func=slice)
 
     # deploy
     deploy_parser = subparsers.add_parser('deploy')
